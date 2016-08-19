@@ -15,23 +15,32 @@
 'use strict';
 
 var
-  http             = require( 'http' )
-, express          = require( 'express' )
-, bodyParser       = require( 'body-parser' )
-, morgan           = require( 'morgan' )
-, app = express()
-, server
-, config = {
+  http             = require( 'http' ),
+  express          = require( 'express' ),
+  bodyParser       = require( 'body-parser' ),
+  morgan           = require( 'morgan' ),
+  app = express(),
+  server,
+  config = {
     port : 8080
-  }
-;
+  };
 
 // ----------- サーバー設定開始 -----------
 server = http.createServer(app);
 app.use( morgan({ format: 'dev' }) );
+app.use( bodyParser.json() );
+app.use( bodyParser.urlencoded({
+  extended: true
+}));
+app.use( express.static( __dirname + '/public' ) );
 
+// ------------ ルーティング設定開始 ------------------
+// ルートパス
+app.get('/', function(req, res) {
+  res.redirect( '/index.html' );
+});
 
- // ------------ サーバー起動開始 ------------------
+// ------------ サーバー起動開始 ------------------
 server.listen( config.port );
 console.log(
   'Express serveer listening on port %d in %s mode',
