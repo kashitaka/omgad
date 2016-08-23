@@ -11,21 +11,26 @@
 */
 /*global */
 
-// ----------- ƒ‚ƒWƒ…[ƒ‹ƒXƒR[ƒv•Ï”ŠJn -----------
+// ----------- ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã‚¹ã‚³ãƒ¼ãƒ—å¤‰æ•°é–‹å§‹ -----------
 'use strict';
 
 var
-  http             = require( 'http' ),
-  express          = require( 'express' ),
-  bodyParser       = require( 'body-parser' ),
-  morgan           = require( 'morgan' ),
+  http        = require( 'http' ),
+  express     = require( 'express' ),
+  bodyParser  = require( 'body-parser' ),
+  morgan      = require( 'morgan' ),
+  MongoClient = require( 'mongodb' ).MongoClient,
+  asyncLoop   = require('node-async-loop'),
   app = express(),
+
   server,
+  url = 'mongodb://localhost/omgad',
+  db,
   config = {
     port : 8080
   };
 
-// ----------- ƒT[ƒo[İ’èŠJn -----------
+// ----------- ã‚µãƒ¼ãƒãƒ¼è¨­å®šé–‹å§‹ -----------
 server = http.createServer(app);
 app.use( morgan({ format: 'dev' }) );
 app.use( bodyParser.json() );
@@ -34,16 +39,75 @@ app.use( bodyParser.urlencoded({
 }));
 app.use( express.static( __dirname + '/public' ) );
 
-// ------------ ƒ‹[ƒeƒBƒ“ƒOİ’èŠJn ------------------
-// ƒ‹[ƒgƒpƒX
+// ---------- ä¾¿åˆ©é–¢æ•° ----------------
+var hoge = function ( a ){
+    console.log(a)
+    return true;
+};
+
+function find( criteria, callback ) {
+  db.collection( 'ad', function ( outer_error, collection ) {
+    collection
+      .find( criteria, {} )
+      .toArray( function ( inner_error, list ) {
+        callback( inner_error, list );
+      });
+  });
+}
+// ---------- ä¾¿åˆ©é–¢æ•° ----------------
+
+
+// ------------ ãƒ«ãƒ¼ãƒ†ã‚£ãƒ³ã‚°è¨­å®šé–‹å§‹ ------------------
+// ãƒ«ãƒ¼ãƒˆãƒ‘ã‚¹
 app.get('/', function(req, res) {
   res.redirect( '/index.html' );
 });
 
-// ------------ ƒT[ƒo[‹N“®ŠJn ------------------
+app.get('/api/', function ( req, res ) {
+  var adData = null;
+  if ( !req.query.words) {
+    res.redirect( '/' );
+    return;
+  }
+  var
+    words = req.query.words.split(',');
+    res;
+
+  words = words.reverse();
+  var first = words.shift();
+
+  var len = words.length;
+
+  console.log('å…¥åŠ›:', first , words);
+
+  asyncLoop(words, function (i, outer_next) {
+    var second = words.shift();
+    var criteria1 = { $and : [ { "k": first} , {"v.k" : second}]};
+    console.log(criteria1);
+    if( words.length > 0 ) {
+    asyncLoop(words, function (word, inner_next) {
+      console.log(word);
+      var criteria2 = { $and : [ { "k": first} , {"v.k" : second}, {"v.v.k": word}]};
+      console.log(criteria2);
+      inner_next();
+      }, function (err) {
+        console.log("å†…å´çµ‚äº†");
+      });
+    }
+    outer_next();
+  }, function (err){
+    console.log("å¤–å´çµ‚äº†");
+  });
+});
+
+// ------------ ã‚µãƒ¼ãƒãƒ¼èµ·å‹•é–‹å§‹ ------------------
+MongoClient.connect( url, function ( err, mongodb ) {
+    console.log( '** Connected correctly to mongo **' );
+    db = mongodb;
+} );
 server.listen( config.port );
 console.log(
   'Express serveer listening on port %d in %s mode',
   server.address().port, app.settings.env
 );
-// ------------ ƒT[ƒo[‹N“®I—¹ ------------------
+// ------------ ã‚µãƒ¼ãƒãƒ¼èµ·å‹•çµ‚äº† ------------------

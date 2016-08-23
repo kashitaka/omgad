@@ -3,10 +3,12 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
+    "async": "^2.0.1",
     "body-parser": "^1.15.0",
     "connect-mongo": "^1.1.x",
     "express": "4.13.x",
     "mongodb": "^2.1.11",
-    "morgan": "^1.7.0"
+    "morgan": "^1.7.0",
+    "node-async-loop": "^1.2.1"
   }
 }
