@@ -21,6 +21,7 @@ var
   morgan      = require( 'morgan' ),
   MongoClient = require( 'mongodb' ).MongoClient,
   asyncLoop   = require('node-async-loop'),
+  async       = require('async'),
   app = express(),
 
   server,
@@ -84,17 +85,35 @@ app.get('/api/', function ( req, res ) {
     var second = words.shift();
     var criteria1 = { $and : [ { "k": first} , {"v.k" : second}]};
     console.log(criteria1);
-    if( words.length > 0 ) {
-    asyncLoop(words, function (word, inner_next) {
-      console.log(word);
-      var criteria2 = { $and : [ { "k": first} , {"v.k" : second}, {"v.v.k": word}]};
-      console.log(criteria2);
-      inner_next();
-      }, function (err) {
-        console.log("内側終了");
-      });
-    }
-    outer_next();
+    // ここで2ワードの検索
+    find( criteria1, function (err, list) {
+      if( words.length > 0 && list.length > 0) {
+        // 検索結果があった場合はさらに掘ってく
+        asyncLoop(words, function (word, inner_next) {
+          var criteria2 = { $and : [ { "k": first} , {"v.k" : second}, {"v.v.k": word}]};
+          console.log(criteria2);
+          // ここで3ワードでの検索する
+          find (criteria2, function ( err, list) {
+            if (list.length > 0) {
+              // 見つかった場合ここを通る
+              res.send(list[0].v.v.v);
+              return;
+            }
+          });
+          // 見つからなかったので2ワードで検索
+          var criteria1 = { $and : [ { "k": first} , {"v.k" : second}, {"v.isData" : true}]};
+          find (criteria2, function ( err, list) {
+            if(list.length > 0){
+              res.send(list[0].v.v);
+            }
+          });
+          inner_next();
+          }, function (err) {
+            console.log("内側終了");
+          });
+      }
+      outer_next();
+    });
   }, function (err){
     console.log("外側終了");
   });
