@@ -79,6 +79,11 @@ app.get('/api/', function ( req, res ) {
 
   var len = words.length;
 
+  if ( len === 1 ) {
+    words.push('');
+    console.log(words);
+  }
+
   console.log('入力:', first , words);
 
   asyncLoop(words, function (i, outer_next) {
@@ -99,23 +104,37 @@ app.get('/api/', function ( req, res ) {
               res.send(list[0].v.v.v);
               return;
             }
+            inner_next();
           });
-          // 見つからなかったので2ワードで検索
-          var criteria1 = { $and : [ { "k": first} , {"v.k" : second}, {"v.isData" : true}]};
-          find (criteria2, function ( err, list) {
-            if(list.length > 0){
-              res.send(list[0].v.v);
-            }
-          });
-          inner_next();
           }, function (err) {
-            console.log("内側終了");
+            // 見つからなかったので2ワードで検索
+            var criteria1 = { $and : [ { "k": first} , {"v.k" : second}, {"v.isData" : true}]};
+            find (criteria1, function ( err, list) {
+              if(list.length > 0){
+                res.send(list[0].v.v);
+                return;
+              }
+            outer_next();
+            });
           });
       }
-      outer_next();
+
+      // 2ワード検索で結果がなかった場合にここを通る。
+      else {
+        outer_next();
+      }
+
     });
   }, function (err){
-    console.log("外側終了");
+    // 最終的に1ワードで検索
+    var criteria1 = { $and : [ { "k": first} , {"isData" : true}]};
+    find (criteria1, function ( err, list) {
+      if(list.length > 0){
+        res.send(list[0].v);
+        return;
+      }
+    res.send("data not find!");
+    });
   });
 });
 
